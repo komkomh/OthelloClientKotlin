@@ -49,7 +49,7 @@ fun getScoredPosition(ban: Ban): Pair<Int, Int>? {
     val result = ban.getPositions()
         .map {
             val nextBan = ban.putStone(it)
-            val score = getMinScore(nextBan, 0)
+            val score = getMinScore(nextBan, 0, null)
             Pair(it, score)
         }
         .maxBy { it.second }
@@ -59,7 +59,7 @@ fun getScoredPosition(ban: Ban): Pair<Int, Int>? {
 }
 
 // 自分の手番
-fun getMaxScore(currentBan: Ban, depth: Int): Int {
+fun getMaxScore(currentBan: Ban, depth: Int, b: Int?): Int {
 
     val positions = currentBan.getPositions()
 
@@ -69,14 +69,34 @@ fun getMaxScore(currentBan: Ban, depth: Int): Int {
         return currentBan.calcScore(positions);
     }
 
-    val scores = positions.map { getMinScore(currentBan.putStone(it), depth) }
-    return scores.max() ?: run { 0 }
+    var maxScore = 0
+    for (position in currentBan.getPositions()) {
+        val score = getMinScore(currentBan.putStone(position), depth, maxScore)
+        if (maxScore < score) {
+            maxScore = score
+        }
+        // βカット
+        if (b != null && maxScore > b) {
+            return maxScore
+        }
+    }
+    return maxScore
 }
 
 // 相手の手番
-fun getMinScore(currentBan: Ban, depth: Int): Int {
-    val scores = currentBan.getPositions().map { getMaxScore(currentBan.putStone(it), depth + 1) }
-    return scores.min() ?: run { 100 }
+fun getMinScore(currentBan: Ban, depth: Int, a: Int?): Int {
+    var minScore = 100
+    for (position in currentBan.getPositions()) {
+        val score = getMaxScore(currentBan.putStone(position), depth + 1, minScore)
+        if (minScore > score) {
+            minScore = score
+        }
+        // αカット
+        if (a != null && minScore < a) {
+            return minScore
+        }
+    }
+    return minScore
 }
 
 // 初期値で盤を生成する
